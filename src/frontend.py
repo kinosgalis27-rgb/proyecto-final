@@ -1,3 +1,6 @@
+# =============================================================================
+# CONFIGURACIÓN INICIAL Y MÓDULOS.
+# =============================================================================
 import customtkinter as ctk
 from PIL import Image, ImageDraw
 import backend
@@ -5,10 +8,12 @@ from tkinter import messagebox, filedialog
 import csv
 import os
 
-
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
+# =============================================================================
+# FUNCIONES AUXILIARES.
+# =============================================================================
 # Funcion que genera una imagen por defecto en caso de que un canino no tenga fotografia asignada
 def crear_imagen_placeholder(size=(100, 100), color="gray"):
     img = Image.new('RGB', size, color=color)
@@ -16,6 +21,9 @@ def crear_imagen_placeholder(size=(100, 100), color="gray"):
     d.text((size[0]/4, size[1]/2-5), "Sin Imagen", fill="white")
     return img
 
+# =============================================================================
+# MÓDULOS DE AUTENTICACIÓN Y REGISTRO.
+# =============================================================================
 # Clase que construye y maneja la ventana inicial de inicio de sesion
 class LoginFrame(ctk.CTkFrame):
     # Metodo constructor que inicia los elementos graficos para capturar credenciales
@@ -48,6 +56,54 @@ class LoginFrame(ctk.CTkFrame):
         else:
             messagebox.showerror("Error", "Credenciales incorrectas")
 
+# Clase que presenta los campos necesarios para inscribir a una nueva persona en el registro
+class RegistroUsuarioFrame(ctk.CTkFrame):
+    # Metodo constructor que posiciona cajas de texto y botones 
+    def __init__(self, master, volver_callback):
+        super().__init__(master)
+        self.volver_callback = volver_callback
+        
+        lbl_title = ctk.CTkLabel(self, text="Registro de Adoptante", font=("Arial", 24, "bold"))
+        lbl_title.pack(pady=30)
+        
+        self.entry_nom = ctk.CTkEntry(self, placeholder_text="Nombre Completo")
+        self.entry_nom.pack(pady=10, padx=50, fill="x")
+        
+        self.entry_cont = ctk.CTkEntry(self, placeholder_text="Contacto (Teléfono o Correo)")
+        self.entry_cont.pack(pady=10, padx=50, fill="x")
+        
+        self.entry_pwd = ctk.CTkEntry(self, placeholder_text="Crea una Contraseña", show="*")
+        self.entry_pwd.pack(pady=10, padx=50, fill="x")
+        
+        btn_guardar = ctk.CTkButton(self, text="Registrarme", command=self.guardar_nuevo_usuario)
+        btn_guardar.pack(pady=(20, 10))
+        
+        btn_volver = ctk.CTkButton(self, text="Volver al Inicio", fg_color="gray", command=self.volver_callback)
+        btn_volver.pack(pady=10)
+
+    # Metodo que valida que no existan campos vacios genera una clave unica y contempla la informacion
+    def guardar_nuevo_usuario(self):
+        import uuid
+        nom = self.entry_nom.get()
+        cont = self.entry_cont.get()
+        pwd = self.entry_pwd.get()
+
+        if not nom or not cont or not pwd:
+            messagebox.showwarning("Faltan datos", "Por favor, llena todos los campos.")
+            return
+        id_usr = "U-" + str(uuid.uuid4().int)[:4]
+
+        nuevo_usuario = backend.USUARIO(id_usr, nom, cont, pwd)
+        try:
+            nuevo_usuario.REG_USUARIO()
+            messagebox.showinfo("Éxito", f"¡Cuenta creada!\nTu ID para iniciar sesión es: {id_usr}")
+            self.volver_callback() 
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+# =============================================================================
+# DASHBOARDS Y VISTAS PRINCIPALES.
+# =============================================================================
 # Clase que define la interfaz principal y herramientas para los usuarios veterinarios o trabajadores
 class TrabajadorDashboardFrame(ctk.CTkFrame):
     # Metodo constructor que divide la pantalla en diferentes pestañas de gestion
@@ -288,51 +344,9 @@ class UsuarioDashboardFrame(ctk.CTkFrame):
             lbl = ctk.CTkLabel(self.frame_reportes, text=rep.mensaje, text_color=txt_color, fg_color=color, corner_radius=8, padx=10, pady=10)
             lbl.pack(fill="x", pady=5, padx=10)
 
-# Clase que presenta los campos necesarios para inscribir a una nueva persona en el registro
-class RegistroUsuarioFrame(ctk.CTkFrame):
-    # Metodo constructor que posiciona cajas de texto y botones 
-    def __init__(self, master, volver_callback):
-        super().__init__(master)
-        self.volver_callback = volver_callback
-        
-        lbl_title = ctk.CTkLabel(self, text="Registro de Adoptante", font=("Arial", 24, "bold"))
-        lbl_title.pack(pady=30)
-        
-        self.entry_nom = ctk.CTkEntry(self, placeholder_text="Nombre Completo")
-        self.entry_nom.pack(pady=10, padx=50, fill="x")
-        
-        self.entry_cont = ctk.CTkEntry(self, placeholder_text="Contacto (Teléfono o Correo)")
-        self.entry_cont.pack(pady=10, padx=50, fill="x")
-        
-        self.entry_pwd = ctk.CTkEntry(self, placeholder_text="Crea una Contraseña", show="*")
-        self.entry_pwd.pack(pady=10, padx=50, fill="x")
-        
-        btn_guardar = ctk.CTkButton(self, text="Registrarme", command=self.guardar_nuevo_usuario)
-        btn_guardar.pack(pady=(20, 10))
-        
-        btn_volver = ctk.CTkButton(self, text="Volver al Inicio", fg_color="gray", command=self.volver_callback)
-        btn_volver.pack(pady=10)
-
-    # Metodo que valida que no existan campos vacios genera una clave unica y contempla la informacion
-    def guardar_nuevo_usuario(self):
-        import uuid
-        nom = self.entry_nom.get()
-        cont = self.entry_cont.get()
-        pwd = self.entry_pwd.get()
-
-        if not nom or not cont or not pwd:
-            messagebox.showwarning("Faltan datos", "Por favor, llena todos los campos.")
-            return
-        id_usr = "U-" + str(uuid.uuid4().int)[:4]
-
-        nuevo_usuario = backend.USUARIO(id_usr, nom, cont, pwd)
-        try:
-            nuevo_usuario.REG_USUARIO()
-            messagebox.showinfo("Éxito", f"¡Cuenta creada!\nTu ID para iniciar sesión es: {id_usr}")
-            self.volver_callback() 
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-
+# =============================================================================
+# CLASE PRINCIPAL Y EJECUCIÓN.
+# =============================================================================
 # Clase raiz del programa que hereda de la ventana principal de customtkinter
 class App(ctk.CTk):
     # Metodo constructor que configura dimensiones iniciales y arranca 
